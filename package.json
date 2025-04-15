@@ -1,5 +1,5 @@
 {
-  "name": "applegame",
+  "name": "game",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -9,9 +9,9 @@
     "preview": "vite preview"
   },
   "devDependencies": {
-    "vite": "^4.4.5"
+    "vite": "^6.2.4"
   },
   "dependencies": {
-    "phaser": "^3.60.0"
+    "phaser": "^3.88.2"
   }
 }
