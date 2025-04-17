@@ -74,7 +74,7 @@ main {
   display: none;
 }
 
-#gameStartBtn{
+#gameStartBtn, #restartBtn {
   display: inline-block;
   width: 100px;
   padding:8px 15px;
@@ -85,11 +85,11 @@ main {
   border-radius: 10px;;
 }
 
-#gameStartBtn p{
+#gameStartBtn p, #restartBtn p {
   margin-top: 0;
 }
 
-#gameStartBtn:hover{
+#gameStartBtn:hover, #restartBtn:hover{
   background-color: var(--dkClr);
   color: var(--liClr);
   cursor:pointer;

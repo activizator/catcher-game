@@ -3,7 +3,7 @@ import Phaser from "phaser";
 
 const sizes = {
     fruitWidth: 50,
-    vegetableWidth: 80
+    vegetableWidth: 90
 };
 
 const timeLimitSec = 35;
@@ -19,7 +19,6 @@ const fruitImages = [
     "lime.png",
     "orange.png",
     "peach.png",
-    "pear.png",
     "plum.png",
     "raspberry.png",
     "red-cherry.png",
@@ -51,15 +50,11 @@ const vegetables = {
     20: "Chili Pepper",
     21: "Peas",
     22: "Bell Pepper",
-    23: "Dill",
-    24: "Cilantro",
-    25: "Bamboo Shoots",
     26: "Broccolini",
     27: "Corn",
     28: "Parsnip",
     29: "Pattypan Squash",
     30: "Zucchini",
-    31: "Shallot",
     32: "Chayote",
     33: "Fennel",
     34: "Cherry Tomato",
@@ -67,15 +62,10 @@ const vegetables = {
     36: "Frisée",
     37: "Yam",
     38: "Eggplant (Thai)",
-    39: "Radish (Daikon)",
-    40: "Kohlrabi (Purple)",
     41: "Pumpkin",
     42: "Butternut Squash",
-    43: "String Beans",
     44: "Artichoke",
     45: "Sweet Potato",
-    46: "Celery",
-    47: "Artichoke (Globe)",
     48: "Snow Pea"
 };
 
@@ -91,18 +81,24 @@ gameCanvas.style.cursor = 'none';
 class GameScene extends Phaser.Scene {
     constructor() {
         super("scene-game");
-        this.player;
+        this.playerLeft;
+        this.playerRight;
         this.cursor;
         this.playerSpeed = speedDown + 80;
         this.target;
-        this.points = 0;
-        this.textScore;
+        this.fruitPoints = 0;
+        this.vegetablePoints = 0;
+        this.textFruitScore;
+        this.textVegetableScore;
         this.textTime;
         this.timedEvent;
         this.remainingTime;
         this.coinMusic;
         this.bgMusic;
         this.emitter;
+        this.fruitIcon;
+        this.vegetableIcon;
+        this.isPaused = false;
     }
 
     preload() {
@@ -121,125 +117,220 @@ class GameScene extends Phaser.Scene {
             this.load.image(fruitName, fruitPath + fruitName);
         });
 
-        for (let i = 1; i <= Object.keys(vegetables).length; i++) {
-            this.load.image(`${i}.png`, vegetablesPath + `${i}.png`);
-        }
+        Object.keys(vegetables).forEach(key => {
+            this.load.image(`${key}.png`, vegetablesPath + `${key}.png`);
+        });
     }
 
     create() {
         this.scene.pause("scene-game");
+
         this.coinMusic = this.sound.add("coin");
         this.bgMusic = this.sound.add("bgMusic");
-        this.bgMusic.play();
+        this.bgMusic.play({ loop: true });
 
         this.add.image(0, 0, "bg").setOrigin(0, 0);
 
-        this.player = this.physics.add.image(0, 0, "basket").setOrigin(0, 0);
-        this.player.setY(this.scale.height - this.player.height);
-        this.player.setImmovable(true);
-        this.player.body.allowGravity = false;
-        this.player.setCollideWorldBounds(true);
+        this.playerLeft = this.physics.add.image(0, this.scale.height - 100, "basket").setOrigin(0, 0);
+        this.playerRight = this.physics.add.image(this.playerLeft.width, this.scale.height - 100, "basket").setOrigin(0, 0);
 
-        const initialItem = this.getRandomItem();
-        this.target = this.physics.add.image(0, 0, initialItem.key).setOrigin(0, 0);
+        this.playerLeft.setImmovable(true);
+        this.playerLeft.body.allowGravity = false;
+        this.playerLeft.setCollideWorldBounds(true);
 
-        const scale = initialItem.type === 'fruit' ?
-            sizes.fruitWidth / this.textures.get(initialItem.key).getSourceImage().width :
-            sizes.vegetableWidth / this.textures.get(initialItem.key).getSourceImage().width;
+        this.playerRight.setImmovable(true);
+        this.playerRight.body.allowGravity = false;
+        this.playerRight.setCollideWorldBounds(true);
 
-        this.target.setScale(scale);
-        this.target.setMaxVelocity(0, speedDown);
-
-        this.target.body.setSize(
-            this.textures.get(initialItem.key).getSourceImage().width * scale,
-            this.textures.get(initialItem.key).getSourceImage().height * scale
-        );
+        const randomFruitIcon = fruitImages[Math.floor(Math.random() * fruitImages.length)];
+        const vegetableKeys = Object.keys(vegetables);
+        const randomVegetableKey = vegetableKeys[Math.floor(Math.random() * vegetableKeys.length)];
+        const randomVegetableImage = `${randomVegetableKey}.png`;
+    
+        const fruitTexture = this.textures.get(randomFruitIcon);
+        const vegetableTexture = this.textures.get(randomVegetableImage);
         
-        this.physics.add.overlap(this.target, this.player, this.targetHit, null, this);
+        this.fruitIcon = this.add.image(
+            this.playerLeft.x + this.playerLeft.width / 2, 
+            this.playerLeft.y + this.playerLeft.height / 2,
+            randomFruitIcon
+        ).setScale((sizes.fruitWidth / 1.2) / fruitTexture.getSourceImage().width);
+    
+        this.vegetableIcon = this.add.image(
+            this.playerRight.x + this.playerRight.width / 2,
+            this.playerRight.y + this.playerRight.height / 2,
+            randomVegetableImage
+        ).setScale((sizes.vegetableWidth / 1.2) / vegetableTexture.getSourceImage().width);
+
+        this.createNewTarget();
+
         this.cursor = this.input.keyboard.createCursorKeys();
-        this.textScore = this.add.text(this.scale.width - 100, 10, "✔️: 0", {
+
+        this.input.keyboard.on('keydown-SPACE', () => {
+            this.togglePause();
+        });
+
+        this.textFruitScore = this.add.text(this.scale.width - 200, 10, "🍓: 0", {
             font: "20px Arial",
             fill: textColor,
         });
-        this.textTime = this.add.text(20, 10, "🕔: 00", {
+        this.textVegetableScore = this.add.text(this.scale.width - 200, 40, "🌽: 0", {
             font: "20px Arial",
+            fill: textColor,
+        });
+        this.textTime = this.add.text(20, 10, `⏰: ${timeLimitSec}`, {
+            font: "20px Arial", 
             fill: textColor,
         });
 
-        this.player.setDepth(10);
+        this.playerLeft.setDepth(5);
+        this.playerRight.setDepth(5);
         this.target.setDepth(5);
+        this.fruitIcon.setDepth(10);
+        this.vegetableIcon.setDepth(10);
 
         this.timedEvent = this.time.delayedCall(timeLimitSec * 1000, this.gameOver, [], this);
 
-        this.emitter = this.add.particles(0, -10, "money", {
+        this.emitter = this.add.particles(0, 0, "money", {
             speed: 100,
             gravityY: speedDown - 200,
             scale: 0.2,
             duration: 200,
             emitting: false
-        })
-        this.emitter.startFollow(this.player, this.player.width / 2, this.player.height / 2 - 50, true);
+        });
+        this.emitter.startFollow(this.playerLeft);
 
         this.scale.on('resize', this.resize, this);
+    }
 
-        // Устанавливаем начальную позицию для первого объекта
-        this.setTargetInitialPosition();
+    togglePause() {
+        if (this.isPaused) {
+            this.isPaused = false;
+            this.physics.resume();
+            this.timedEvent.paused = false;
+            this.bgMusic.resume();
+        } else {
+            this.isPaused = true;
+            this.physics.pause();
+            this.timedEvent.paused = true;
+            this.bgMusic.pause();
+        }
     }
 
     resize(gameSize) {
         const width = gameSize.width;
         const height = gameSize.height;
-        this.player.setY(height - this.player.height);
-        this.textScore.setPosition(width - 100, 10);
+
+        this.playerLeft.setY(height - 100);
+        this.playerRight.setY(height - 100);
+
+        this.textFruitScore.setPosition(width - 200, 10);
+        this.textVegetableScore.setPosition(width - 200, 40);
         this.textTime.setPosition(20, 10);
+        
+        this.updateIconPositions();
     }
 
     update() {
+        if (this.isPaused) return;
+
         this.remainingTime = this.timedEvent.getRemainingSeconds();
-        this.textTime.setText(`🕔:  ${Math.round(this.remainingTime).toString()}`);
+        this.textTime.setText(`⏰: ${Math.round(this.remainingTime)}`);
 
         if (this.target.y >= this.scale.height) {
-            this.target.setY(0);
-            this.setTargetRandomX(); // Используем функцию для установки случайной X координаты
-            this.changeFruitTexture();
+            this.target.destroy();
+            this.createNewTarget();
         }
 
-        const {
-            left,
-            right
-        } = this.cursor;
+        const { left, right } = this.cursor;
+
+        this.playerLeft.setVelocityX(0);
+        this.playerRight.setVelocityX(0);
 
         if (left.isDown) {
-            this.player.setVelocityX(-this.playerSpeed);
+            this.playerLeft.setVelocityX(-this.playerSpeed);
+            this.playerRight.setVelocityX(-this.playerSpeed);
         } else if (right.isDown) {
-            this.player.setVelocityX(this.playerSpeed);
-        } else {
-            this.player.setVelocityX(0);
+            this.playerLeft.setVelocityX(this.playerSpeed);
+            this.playerRight.setVelocityX(this.playerSpeed);
         }
+        
+        this.updateIconPositions();
     }
 
-    // Новая функция для установки случайной X координаты с учетом ширины корзины
-    setTargetRandomX() {
-        const basketWidth = this.player.width;
+    updateIconPositions() {
+        this.fruitIcon.setPosition(
+            this.playerLeft.x + this.playerLeft.width / 2,
+            this.playerLeft.y + this.playerLeft.height / 2
+        );
+        this.vegetableIcon.setPosition(
+            this.playerRight.x + this.playerRight.width / 2,
+            this.playerRight.y + this.playerRight.height / 2
+        );
+    }
+
+    createNewTarget() {
+        const newItem = this.getRandomItem();
+        this.target = this.physics.add.image(0, 0, newItem.key)
+            .setOrigin(0.5)
+            .setVelocity(0, speedDown);
+
+        const texture = this.textures.get(newItem.key);
+        const scale = newItem.type === 'fruit' 
+            ? sizes.fruitWidth / texture.getSourceImage().width 
+            : sizes.vegetableWidth / texture.getSourceImage().width;
+            
+        this.target.setScale(scale);
+        this.target.body.setSize(
+            texture.getSourceImage().width * scale,
+            texture.getSourceImage().height * scale
+        );
+
+        this.setTargetRandomPosition();
+        
+        this.physics.add.overlap(this.target, this.playerLeft, this.targetHitLeft, null, this);
+        this.physics.add.overlap(this.target, this.playerRight, this.targetHitRight, null, this);
+    }
+
+    setTargetRandomPosition() {
+        const basketWidth = this.playerLeft.width + this.playerRight.width;
         const min = basketWidth;
         const max = this.scale.width - basketWidth;
-        this.target.setX(Phaser.Math.Between(min, max));
+        this.target.setPosition(
+            Phaser.Math.Between(min, max),
+            -50
+        );
+        this.target.setVelocityY(speedDown);
     }
 
-    // Функция для установки начальной позиции цели
-    setTargetInitialPosition() {
-        this.target.setY(0);
-        this.setTargetRandomX(); // Используем функцию для установки случайной X координаты
+    targetHitLeft(target, player) {
+        if (fruitImages.includes(target.texture.key)) {
+            this.fruitPoints++;
+            this.textFruitScore.setText(`🍓: ${this.fruitPoints}`);
+        } else {
+            this.fruitPoints = Math.max(0, this.fruitPoints - 1);
+            this.textFruitScore.setText(`🍓: ${this.fruitPoints}`);
+        }
+        this.handleTargetCollision();
     }
 
-    targetHit() {
+    targetHitRight(target, player) {
+        const vegetableImageKeys = Object.keys(vegetables).map(key => `${key}.png`);
+        if (vegetableImageKeys.includes(target.texture.key)) {
+            this.vegetablePoints++;
+            this.textVegetableScore.setText(`🌽: ${this.vegetablePoints}`);
+        } else {
+            this.vegetablePoints = Math.max(0, this.vegetablePoints - 1);
+            this.textVegetableScore.setText(`🌽: ${this.vegetablePoints}`);
+        }
+        this.handleTargetCollision();
+    }
+
+    handleTargetCollision() {
         this.coinMusic.play();
-        this.emitter.start();
-        this.target.setY(0);
-        this.setTargetRandomX(); // Используем функцию для установки случайной X координаты
-        this.changeFruitTexture();
-        this.points++;
-        this.textScore.setText(`✔️: ${this.points}`);
+        this.emitter.explode(10);
+        this.target.destroy();
+        this.createNewTarget();
     }
 
     getRandomItem() {
@@ -252,46 +343,62 @@ class GameScene extends Phaser.Scene {
             };
         } else {
             const vegetableKeys = Object.keys(vegetables);
-            const randomVegetableKey = vegetableKeys[Math.floor(Math.random() * vegetableKeys.length)];
+            const randomKey = vegetableKeys[Math.floor(Math.random() * vegetableKeys.length)];
             return {
-                key: `${randomVegetableKey}.png`,
+                key: `${randomKey}.png`,
                 type: 'vegetable'
             };
         }
     }
 
-    changeFruitTexture() {
-        const newItem = this.getRandomItem();
-        this.target.setTexture(newItem.key);
-
-        const texture = this.textures.get(newItem.key);
-        if (texture) {
-            const scale = newItem.type === 'fruit' ?
-                sizes.fruitWidth / texture.getSourceImage().width :
-                sizes.vegetableWidth / texture.getSourceImage().width;
-
-            this.target.setScale(scale);
-
-            this.target.body.setSize(
-                texture.getSourceImage().width * scale,
-                texture.getSourceImage().height * scale
-            );
-        } else {
-            console.error(`Текстура ${newItem.key} не найдена!`);
-        }
-    }
-
     gameOver() {
-        this.sys.game.destroy(true);
-        if (this.points >= 10) {
-            gameEndScoreSpan.textContent = this.points;
-            gameWinLoseSpan.textContent = "Win! 😊";
-        } else {
-            gameEndScoreSpan.textContent = this.points;
-            gameWinLoseSpan.textContent = "Lose! 😭";
-        }
+        const totalScore = this.fruitPoints + this.vegetablePoints;
+        const isBalanced = this.fruitPoints === this.vegetablePoints;
+        
+        gameEndScoreSpan.textContent = totalScore;
+        gameWinLoseSpan.textContent = (totalScore >= 10 && isBalanced) 
+            ? "Win! 😊" 
+            : "Lose! 😭 (We need an equal amount of fruits and vegetables.)";
         gameEndDiv.style.display = "flex";
+    
+        this.scene.pause();
+        this.bgMusic.stop();
+        
+        if (this.target) {
+            this.target.destroy();
+        }
+        
+        this.input.keyboard.enabled = false;
     }
+
+    restartGame() {
+      this.fruitPoints = 0;
+      this.vegetablePoints = 0;
+      this.textFruitScore.setText("🍓: 0");
+      this.textVegetableScore.setText("🌽: 0");
+      
+      if (this.target) {
+          this.target.destroy();
+      }
+      
+      this.createNewTarget();
+      
+      if (this.timedEvent) {
+          this.timedEvent.remove();
+      }
+      this.timedEvent = this.time.delayedCall(timeLimitSec * 1000, this.gameOver, [], this);
+      
+      this.isPaused = false;
+      this.physics.resume();
+      this.input.keyboard.enabled = true;
+      
+      if (!this.bgMusic.isPlaying) {
+          this.bgMusic.play({ loop: true });
+      }
+      
+      gameEndDiv.style.display = "none";
+      this.scene.resume();
+  }
 }
 
 const config = {
@@ -302,9 +409,7 @@ const config = {
     physics: {
         default: "arcade",
         arcade: {
-            gravity: {
-                y: speedDown
-            },
+            gravity: { y: speedDown },
             debug: false,
         },
     },
@@ -315,10 +420,13 @@ const config = {
     },
 };
 
-
 const game = new Phaser.Game(config);
 
 gameStartBtn.addEventListener("click", () => {
     gameStartDiv.style.display = "none";
     game.scene.resume("scene-game");
-})
+});
+
+document.getElementById('restartBtn').addEventListener("click", () => {
+    game.scene.getScene("scene-game").restartGame();
+});
