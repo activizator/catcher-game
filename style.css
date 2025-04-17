@@ -1,6 +1,6 @@
 :root {
   font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
-  --dkClr: #181818;
+  --dkClr: #0d0d35;
   --liClr: whitesmoke;
   --accClr: #0d0d35;
 }
@@ -13,7 +13,11 @@
 
 html,
 body {
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
   height: 100%;
+  width: 100%;
 }
 
 body {
@@ -29,33 +33,21 @@ a:hover, a:active{
   color: var(--liClr);
 }
 
-
-header,
-footer {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 40px 20px;
-}
-
-footer{
-  display: flex;
-  flex-direction: column;
-}
-
 main {
   flex: 1;
   display: flex;
 }
 
 #gameCanvas {
-  border: 1px solid red;
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
   display: flex;
   z-index: 1;
+  width: 100vw;
+  height: 100vh;
+  cursor: none;
 }
 
 .gameUI {
@@ -89,6 +81,7 @@ main {
   margin: 20px 0;
   text-align: center;
   font-family: inherit;
+  border: 0.5px solid var(--liClr);
   border-radius: 10px;;
 }
 
@@ -98,7 +91,6 @@ main {
 
 #gameStartBtn:hover{
   background-color: var(--dkClr);
-  border: 0.5px solid var(--liClr);
   color: var(--liClr);
   cursor:pointer;
 }
