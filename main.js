@@ -1,12 +1,24 @@
 import "./style.css";
 import Phaser from "phaser";
 
+document.addEventListener('touchmove', function(e) {
+    if (e.scale !== 1) { e.preventDefault(); }
+}, { passive: false });
+
+document.addEventListener('gesturestart', function(e) {
+    e.preventDefault();
+});
+
+window.addEventListener('touchmove', function(e) {
+    e.preventDefault();
+}, { passive: false });
+
 const sizes = {
     fruitWidth: 50,
     vegetableWidth: 90
 };
 
-const timeLimitSec = 35;
+const timeLimitSec = 30;
 const textColor = "white";
 const fruitPath = "/assets/fruit/pngs/";
 const fruitImages = [
@@ -69,7 +81,7 @@ const vegetables = {
     48: "Snow Pea"
 };
 
-const speedDown = 350;
+const speedDown = 330;
 const gameStartDiv = document.querySelector("#gameStartDiv");
 const gameStartBtn = document.querySelector("#gameStartBtn");
 const gameEndDiv = document.querySelector("#gameEndDiv");
@@ -99,6 +111,9 @@ class GameScene extends Phaser.Scene {
         this.fruitIcon;
         this.vegetableIcon;
         this.isPaused = false;
+        this.leftButton = null;
+        this.rightButton = null;
+        this.isMobile = false;
     }
 
     preload() {
@@ -108,6 +123,9 @@ class GameScene extends Phaser.Scene {
         });
 
         this.load.image("bg", "/assets/bg.jpg");
+        this.load.image("left_arrow", "/assets/left_arrow.png");
+        this.load.image("right_arrow", "/assets/right_arrow.png");
+        this.load.image("pause", "/assets/pause.png");
         this.load.image("basket", "/assets/basket.png");
         this.load.image("money", "/assets/money.png");
         this.load.audio("coin", "/assets/coin.mp3");
@@ -123,30 +141,56 @@ class GameScene extends Phaser.Scene {
     }
 
     create() {
-        this.scene.pause("scene-game");
+        this.isMobile = !this.sys.game.device.os.desktop;
 
         this.coinMusic = this.sound.add("coin");
         this.bgMusic = this.sound.add("bgMusic");
-        this.bgMusic.play({ loop: true });
-
+        
         this.add.image(0, 0, "bg").setOrigin(0, 0);
-
-        this.playerLeft = this.physics.add.image(0, this.scale.height - 100, "basket").setOrigin(0, 0);
-        this.playerRight = this.physics.add.image(this.playerLeft.width, this.scale.height - 100, "basket").setOrigin(0, 0);
-
+    
+        const basketScale = this.isMobile ? 0.8 : 1;
+        this.playerLeft = this.physics.add.image(0, this.scale.height - 100, "basket")
+            .setOrigin(0, 0)
+            .setScale(basketScale);
+        this.playerRight = this.physics.add.image(this.playerLeft.width, this.scale.height - 100, "basket")
+            .setOrigin(0, 0)
+            .setScale(basketScale);
+    
         this.playerLeft.setImmovable(true);
         this.playerLeft.body.allowGravity = false;
         this.playerLeft.setCollideWorldBounds(true);
-
+    
         this.playerRight.setImmovable(true);
         this.playerRight.body.allowGravity = false;
         this.playerRight.setCollideWorldBounds(true);
+
+        this.input.on('pointerdown', (pointer) => {
+            if (this.isMobile) {
+                const touchX = pointer.x;
+                const middleX = this.scale.width / 2;
+                
+                if (touchX < middleX) {
+                    this.playerLeft.setVelocityX(-this.playerSpeed);
+                    this.playerRight.setVelocityX(-this.playerSpeed);
+                } else {
+                    this.playerLeft.setVelocityX(this.playerSpeed);
+                    this.playerRight.setVelocityX(this.playerSpeed);
+                }
+            }
+        });
+
+        this.input.on('pointerup', () => {
+            if (this.isMobile) {
+                this.playerLeft.setVelocityX(0);
+                this.playerRight.setVelocityX(0);
+            }
+        });
 
         const randomFruitIcon = fruitImages[Math.floor(Math.random() * fruitImages.length)];
         const vegetableKeys = Object.keys(vegetables);
         const randomVegetableKey = vegetableKeys[Math.floor(Math.random() * vegetableKeys.length)];
         const randomVegetableImage = `${randomVegetableKey}.png`;
-    
+
         const fruitTexture = this.textures.get(randomFruitIcon);
         const vegetableTexture = this.textures.get(randomVegetableImage);
         
@@ -163,23 +207,23 @@ class GameScene extends Phaser.Scene {
         ).setScale((sizes.vegetableWidth / 1.2) / vegetableTexture.getSourceImage().width);
 
         this.createNewTarget();
-
         this.cursor = this.input.keyboard.createCursorKeys();
 
         this.input.keyboard.on('keydown-SPACE', () => {
             this.togglePause();
         });
 
+        const textScale = this.isMobile ? 0.8 : 1;
         this.textFruitScore = this.add.text(this.scale.width - 200, 10, "🍓: 0", {
-            font: "20px Arial",
+            font: `${20 * textScale}px Arial`,
             fill: textColor,
         });
         this.textVegetableScore = this.add.text(this.scale.width - 200, 40, "🌽: 0", {
-            font: "20px Arial",
+            font: `${20 * textScale}px Arial`,
             fill: textColor,
         });
         this.textTime = this.add.text(20, 10, `⏰: ${timeLimitSec}`, {
-            font: "20px Arial", 
+            font: `${20 * textScale}px Arial`,
             fill: textColor,
         });
 
@@ -192,15 +236,98 @@ class GameScene extends Phaser.Scene {
         this.timedEvent = this.time.delayedCall(timeLimitSec * 1000, this.gameOver, [], this);
 
         this.emitter = this.add.particles(0, 0, "money", {
-            speed: 100,
+            scale: { start: 0.2, end: 0.1 },
+            speed: { min: 20, max: 100 },
             gravityY: speedDown - 200,
-            scale: 0.2,
-            duration: 200,
+            lifespan: 200,
             emitting: false
         });
         this.emitter.startFollow(this.playerLeft);
 
+        if (this.isMobile) {
+            this.createMobileControls();
+        }
+        
         this.scale.on('resize', this.resize, this);
+        
+        this.bgMusic.pause();
+        this.scene.pause();
+        
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                this.scene.pause();
+                if (this.bgMusic && this.bgMusic.isPlaying) {
+                    this.bgMusic.pause();
+                }
+            } else if (!this.isPaused && gameStartDiv.style.display === "none") {
+                this.scene.resume();
+                if (this.bgMusic && !this.bgMusic.isPlaying) {
+                    this.bgMusic.resume();
+                }
+            }
+        });
+    }
+
+    createMobileControls() {
+        const buttonSize = this.scale.width * 0.07;
+        const buttonSpacing = this.scale.width * 0.05;
+        const pauseButtonSize = buttonSize * 0.75;
+
+        if (this.leftButton) {
+            this.leftButton.destroy();
+        }
+        if (this.rightButton) {
+            this.rightButton.destroy();
+        }
+
+        this.leftButton = this.add.image(buttonSpacing, this.scale.height - buttonSize - buttonSpacing, 'left_arrow')
+            .setOrigin(0, 0)
+            .setDisplaySize(buttonSize, buttonSize)
+            .setInteractive()
+            .setAlpha(0.7)
+            .setScrollFactor(0);
+
+        this.rightButton = this.add.image(this.scale.width - buttonSize - buttonSpacing, this.scale.height - buttonSize - buttonSpacing, 'right_arrow')
+            .setOrigin(0, 0)
+            .setDisplaySize(buttonSize, buttonSize)
+            .setInteractive()
+            .setAlpha(0.7)
+            .setScrollFactor(0);
+
+            ['pointerdown', 'pointerover'].forEach(eventName => {
+                this.leftButton.on(eventName, () => {
+                    if (!this.isPaused) {
+                        this.playerLeft.setVelocityX(-this.playerSpeed);
+                    }
+                });
+        
+                this.rightButton.on(eventName, () => {
+                    if (!this.isPaused) {
+                        this.playerLeft.setVelocityX(this.playerSpeed);
+                    }
+                });
+            });
+        
+            ['pointerup', 'pointerout'].forEach(eventName => {
+                this.leftButton.on(eventName, () => {
+                    if (!this.isPaused) {
+                        this.playerLeft.setVelocityX(0);
+                    }
+                });
+        
+                this.rightButton.on(eventName, () => {
+                    if (!this.isPaused) {
+                        this.playerLeft.setVelocityX(0);
+                    }
+                });
+            });
+
+        const pauseButton = this.add.image(this.scale.width - pauseButtonSize - buttonSpacing, buttonSpacing, 'pause')
+            .setOrigin(1, 0)
+            .setDisplaySize(pauseButtonSize, pauseButtonSize)
+            .setInteractive()
+            .on('pointerdown', this.togglePause, this)
+            .setScrollFactor(0);
     }
 
     togglePause() {
@@ -217,20 +344,6 @@ class GameScene extends Phaser.Scene {
         }
     }
 
-    resize(gameSize) {
-        const width = gameSize.width;
-        const height = gameSize.height;
-
-        this.playerLeft.setY(height - 100);
-        this.playerRight.setY(height - 100);
-
-        this.textFruitScore.setPosition(width - 200, 10);
-        this.textVegetableScore.setPosition(width - 200, 40);
-        this.textTime.setPosition(20, 10);
-        
-        this.updateIconPositions();
-    }
-
     update() {
         if (this.isPaused) return;
 
@@ -244,16 +357,25 @@ class GameScene extends Phaser.Scene {
 
         const { left, right } = this.cursor;
 
-        this.playerLeft.setVelocityX(0);
-        this.playerRight.setVelocityX(0);
+        if (!this.isMobile) {
+            this.playerLeft.setVelocityX(0);
+            this.playerRight.setVelocityX(0);
 
-        if (left.isDown) {
-            this.playerLeft.setVelocityX(-this.playerSpeed);
-            this.playerRight.setVelocityX(-this.playerSpeed);
-        } else if (right.isDown) {
-            this.playerLeft.setVelocityX(this.playerSpeed);
-            this.playerRight.setVelocityX(this.playerSpeed);
+            if (left.isDown) {
+                this.playerLeft.setVelocityX(-this.playerSpeed);
+                this.playerRight.setVelocityX(-this.playerSpeed);
+            } else if (right.isDown) {
+                this.playerLeft.setVelocityX(this.playerSpeed);
+                this.playerRight.setVelocityX(this.playerSpeed);
+            }
         }
+
+        const basketDistance = this.playerLeft.width;
+        
+        if (this.playerLeft.x + basketDistance + this.playerRight.width > this.scale.width) {
+            this.playerLeft.x = this.scale.width - basketDistance - this.playerRight.width;
+        }
+        this.playerRight.x = this.playerLeft.x + basketDistance;
         
         this.updateIconPositions();
     }
@@ -351,6 +473,37 @@ class GameScene extends Phaser.Scene {
         }
     }
 
+    resize(gameSize) {
+        const width = gameSize.width;
+        const height = gameSize.height;
+        const isMobile = !this.sys.game.device.os.desktop;
+
+        const basketScale = isMobile ? 0.8 : 1;
+        const textScale = isMobile ? 0.8 : 1;
+
+        this.playerLeft.setScale(basketScale);
+        this.playerRight.setScale(basketScale);
+        
+        this.playerLeft.setY(height - 100);
+        this.playerRight.setY(height - 100);
+
+        this.textFruitScore.setPosition(width - 200, 10);
+        this.textVegetableScore.setPosition(width - 200, 40);
+        this.textTime.setPosition(20, 10);
+
+        if (isMobile) {
+            this.createMobileControls();
+        }
+        const basketDistance = this.playerLeft.width;
+        
+        if (this.playerLeft.x + basketDistance + this.playerRight.width > this.scale.width) {
+            this.playerLeft.x = this.scale.width - basketDistance - this.playerRight.width;
+        }
+        this.playerRight.x = this.playerLeft.x + basketDistance;
+        
+        this.updateIconPositions();
+    }
+
     gameOver() {
         const totalScore = this.fruitPoints + this.vegetablePoints;
         const isBalanced = this.fruitPoints === this.vegetablePoints;
@@ -372,40 +525,41 @@ class GameScene extends Phaser.Scene {
     }
 
     restartGame() {
-      this.fruitPoints = 0;
-      this.vegetablePoints = 0;
-      this.textFruitScore.setText("🍓: 0");
-      this.textVegetableScore.setText("🌽: 0");
-      
-      if (this.target) {
-          this.target.destroy();
-      }
-      
-      this.createNewTarget();
-      
-      if (this.timedEvent) {
-          this.timedEvent.remove();
-      }
-      this.timedEvent = this.time.delayedCall(timeLimitSec * 1000, this.gameOver, [], this);
-      
-      this.isPaused = false;
-      this.physics.resume();
-      this.input.keyboard.enabled = true;
-      
-      if (!this.bgMusic.isPlaying) {
-          this.bgMusic.play({ loop: true });
-      }
-      
-      gameEndDiv.style.display = "none";
-      this.scene.resume();
-  }
+        this.fruitPoints = 0;
+        this.vegetablePoints = 0;
+        this.textFruitScore.setText("🍓: 0");
+        this.textVegetableScore.setText("🌽: 0");
+        
+        if (this.target) {
+            this.target.destroy();
+        }
+        
+        this.createNewTarget();
+        
+        if (this.timedEvent) {
+            this.timedEvent.remove();
+        }
+        this.timedEvent = this.time.delayedCall(timeLimitSec * 1000, this.gameOver, [], this);
+        
+        this.isPaused = false;
+        this.physics.resume();
+        this.input.keyboard.enabled = true;
+        
+        if (!this.bgMusic.isPlaying) {
+            this.bgMusic.play({ loop: true });
+        }
+        
+        gameEndDiv.style.display = "none";
+        this.scene.resume();
+    }
 }
 
 const config = {
-    type: Phaser.WEBGL,
+    type: Phaser.CANVAS,
     width: window.innerWidth,
     height: window.innerHeight,
     canvas: gameCanvas,
+    parent: 'gameContainer',
     physics: {
         default: "arcade",
         arcade: {
@@ -418,15 +572,28 @@ const config = {
         mode: Phaser.Scale.RESIZE,
         autoCenter: Phaser.Scale.CENTER_BOTH,
     },
+    render: {
+        pixelArt: false,
+        antialias: true
+    }
 };
 
 const game = new Phaser.Game(config);
 
 gameStartBtn.addEventListener("click", () => {
     gameStartDiv.style.display = "none";
-    game.scene.resume("scene-game");
+    if (game.scene.scenes[0]) {
+        const gameScene = game.scene.scenes[0];
+        gameScene.isPaused = false;
+        gameScene.scene.resume();
+        
+        // Проверяем, существует ли bgMusic перед вызовом play
+        if (gameScene.bgMusic) {
+            gameScene.bgMusic.play({ loop: true });
+        }
+    }
 });
 
-document.getElementById('restartBtn').addEventListener("click", () => {
-    game.scene.getScene("scene-game").restartGame();
+document.getElementById('restartBtn').addEventListener('click', () => {
+    game.scene.getScene('scene-game').restartGame();
 });
