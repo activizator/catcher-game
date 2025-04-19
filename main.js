@@ -20,7 +20,7 @@ const sizes = {
 
 const timeLimitSec = 30;
 const textColor = "white";
-const fruitPath = "/assets/fruit/pngs/";
+const fruitPath = "./assets/fruit/pngs/";
 const fruitImages = [
     "banana.png",
     "black-berry-dark.png",
@@ -38,7 +38,7 @@ const fruitImages = [
     "strawberry.png",
 ];
 
-const vegetablesPath = "/assets/vegetables/PNG/without_shadow/";
+const vegetablesPath = "./assets/vegetables/PNG/without_shadow/";
 const vegetables = {
     1: "Broccoli",
     2: "Cabbage",
@@ -122,14 +122,28 @@ class GameScene extends Phaser.Scene {
             e.preventDefault();
         });
 
-        this.load.image("bg", "/assets/bg.jpg");
-        this.load.image("left_arrow", "/assets/left_arrow.png");
-        this.load.image("right_arrow", "/assets/right_arrow.png");
-        this.load.image("pause", "/assets/pause.png");
-        this.load.image("basket", "/assets/basket.png");
-        this.load.image("money", "/assets/money.png");
-        this.load.audio("coin", "/assets/coin.mp3");
-        this.load.audio("bgMusic", "/assets/bgMusic.mp3");
+        // Показываем лоадер перед началом загрузки
+        document.getElementById('loaderDiv').style.display = 'flex';
+
+        // Обработчик прогресса
+        this.load.on('progress', (value) => {
+        document.getElementById('progressSpan').textContent = 
+            `${Math.floor(value * 100)}%`;
+        });
+
+        // Обработчик завершения загрузки
+        this.load.on('complete', () => {
+        document.getElementById('loaderDiv').style.display = 'none';
+        });
+
+        this.load.image("bg", "./assets/bg.jpg");
+        this.load.image("left_arrow", "./assets/left_arrow.png");
+        this.load.image("right_arrow", "./assets/right_arrow.png");
+        this.load.image("pause", "./assets/pause.png");
+        this.load.image("basket", "./assets/basket.png");
+        this.load.image("money", "./assets/money.png");
+        this.load.audio("coin", "./assets/coin.mp3");
+        this.load.audio("bgMusic", "./assets/bgMusic.mp3");
 
         fruitImages.forEach((fruitName) => {
             this.load.image(fruitName, fruitPath + fruitName);
@@ -581,7 +595,12 @@ const config = {
 const game = new Phaser.Game(config);
 
 gameStartBtn.addEventListener("click", () => {
-    gameStartDiv.style.display = "none";
+    if (game.scene.scenes[0].load.isLoading()) {
+        alert('Resources are still loading!');
+        return;
+      }
+      
+      gameStartDiv.style.display = "none";
     if (game.scene.scenes[0]) {
         const gameScene = game.scene.scenes[0];
         gameScene.isPaused = false;

@@ -7,11 +7,18 @@
     <title>Catcher</title>
   </head>
   <body>
+    <div id="loaderDiv">
+      <div class="loader"></div>
+      <p>Loading... <span id="progressSpan">0%</span></p>
+    </div>
     <main>
       <canvas id="gameCanvas"></canvas>
       <div id="gameStartDiv" class="gameUI">
         <h1>Catcher</h1>
-        <p>Catch falling fruits and vegetables into two separate baskets—one<br>for fruits and one for veggies! The goal is to keep a perfect balance:<br>the number of fruits and veggies in their baskets must be equal,<br>and the total collected must be over 10 before time runs out!</p>
+        <p>Catch falling fruits and vegetables into two separate baskets—one<br>
+          for fruits and one for veggies! The goal is to keep a perfect balance:<br>
+          the number of fruits and veggies in their baskets must be equal,<br>
+          and the total collected must be over 10 before time runs out!</p>
         <button id="gameStartBtn"><p>start</p></button>
       </div>
       <div id="gameEndDiv" class="gameUI">
