@@ -1,34 +1,26 @@
-Catch falling fruits and vegetables into two separate baskets—one for fruits and one for veggies! The goal is to keep a perfect balance: the number of fruits and veggies in their baskets must be equal, and the total collected must be over 10 before time runs out!
+# Fruit & Veggie Balance Challenge 🍎🥕⚖️  
 
-How to Play:
+**Catch falling fruits and veggies into separate baskets!** Keep the counts *equal* and collect **over 10 total** before time runs out!  
 
-    Use the left and right arrow keys to move the baskets.
+## 🎯 How to Play  
+- **← → arrows**: Move baskets  
+- **Left basket**: Fruits (🍎🍌🍓)  
+- **Right basket**: Veggies (🥕🍅🥒)  
+- **Balance matters!** Uneven counts lose points.  
+- **Win**: Collect **>10 items** (balanced!) before time ends.  
 
-    The left basket catches fruits (apples, bananas, berries, etc.).
+## ⚡ Challenge  
+- Speed **increases** over time!  
+- Can you keep perfect balance under pressure?  
 
-    The right basket catches vegetables (carrots, tomatoes, cucumbers, etc.).
+## ✨ Features  
+- 🎯 Colorful fruit & veggie graphics  
+- ⏳ Time-pressure excitement  
+- 📈 Difficulty ramps up  
 
-    Keep the counts equal—if one basket has more than the other, you lose points!
+## 🎮 Perfect for players who love:  
+- Quick reflexes 🚀  
+- Strategic balancing ⚖️  
+- Fun, healthy themes!  
 
-    Collect more than 10 items in total before the timer ends to win!
-
-Challenge:
-Speed increases as you play! Can you maintain perfect balance under pressure?
-
-Features:
-
-    Colorful, fun graphics with various fruits and veggies.
-
-    Increasing difficulty for higher scores.
-
-    Time pressure for fast-paced excitement!
-
-Perfect for players who love:
-
-    Quick reflexes.
-
-    Strategic thinking.
-
-    Fun, healthy-themed games!
-
-Can you master the Fruit & Veggie Balance Challenge? 🍎🥕⚖️
+**Can you master the challenge?**  
