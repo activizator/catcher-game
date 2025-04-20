@@ -226,6 +226,12 @@ class GameScene extends Phaser.Scene {
             this.togglePause();
         });
 
+        this.input.on('pointerdown', (pointer) => {
+            if (pointer.rightButtonReleased()) {
+
+            }
+        });
+
         const textScale = this.isMobile ? 0.8 : 1;
         this.textFruitScore = this.add.text(this.scale.width - 200, 10, "🍓: 0", {
             font: `${20 * textScale}px Arial`,
@@ -369,16 +375,18 @@ class GameScene extends Phaser.Scene {
         }
 
         const { left, right } = this.cursor;
+        const mouseLeft = this.input.activePointer.leftButtonDown();
+        const mouseRight = this.input.activePointer.rightButtonDown();
 
         if (!this.isMobile) {
             this.playerLeft.setVelocityX(0);
             this.playerRight.setVelocityX(0);
         
-            if (left.isDown || this.keyA.isDown) {
+            if (left.isDown || this.keyA.isDown || mouseLeft) {
                 this.playerLeft.setVelocityX(-this.playerSpeed);
                 this.playerRight.setVelocityX(-this.playerSpeed);
             } 
-            else if (right.isDown || this.keyD.isDown) {
+            else if (right.isDown || this.keyD.isDown || mouseRight) {
                 this.playerLeft.setVelocityX(this.playerSpeed);
                 this.playerRight.setVelocityX(this.playerSpeed);
             }
