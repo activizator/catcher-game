@@ -122,18 +122,15 @@ class GameScene extends Phaser.Scene {
             e.preventDefault();
         });
 
-        // Показываем лоадер перед началом загрузки
         document.getElementById('loaderDiv').style.display = 'flex';
 
-        // Обработчик прогресса
         this.load.on('progress', (value) => {
-        document.getElementById('progressSpan').textContent = 
+            document.getElementById('progressSpan').textContent = 
             `${Math.floor(value * 100)}%`;
         });
 
-        // Обработчик завершения загрузки
         this.load.on('complete', () => {
-        document.getElementById('loaderDiv').style.display = 'none';
+            document.getElementById('loaderDiv').style.display = 'none';
         });
 
         this.load.image("bg", "./assets/bg.jpg");
@@ -222,6 +219,8 @@ class GameScene extends Phaser.Scene {
 
         this.createNewTarget();
         this.cursor = this.input.keyboard.createCursorKeys();
+        this.keyA = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.A);
+        this.keyD = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.D);
 
         this.input.keyboard.on('keydown-SPACE', () => {
             this.togglePause();
@@ -374,11 +373,12 @@ class GameScene extends Phaser.Scene {
         if (!this.isMobile) {
             this.playerLeft.setVelocityX(0);
             this.playerRight.setVelocityX(0);
-
-            if (left.isDown) {
+        
+            if (left.isDown || this.keyA.isDown) {
                 this.playerLeft.setVelocityX(-this.playerSpeed);
                 this.playerRight.setVelocityX(-this.playerSpeed);
-            } else if (right.isDown) {
+            } 
+            else if (right.isDown || this.keyD.isDown) {
                 this.playerLeft.setVelocityX(this.playerSpeed);
                 this.playerRight.setVelocityX(this.playerSpeed);
             }
@@ -396,12 +396,12 @@ class GameScene extends Phaser.Scene {
 
     updateIconPositions() {
         this.fruitIcon.setPosition(
-            this.playerLeft.x + this.playerLeft.width / 2,
-            this.playerLeft.y + this.playerLeft.height / 2
+            this.playerLeft.x + (this.playerLeft.width * this.playerLeft.scaleX) / 2,
+            this.playerLeft.y + (this.playerLeft.height * this.playerLeft.scaleY) / 2
         );
         this.vegetableIcon.setPosition(
-            this.playerRight.x + this.playerRight.width / 2,
-            this.playerRight.y + this.playerRight.height / 2
+            this.playerRight.x + (this.playerRight.width * this.playerRight.scaleX) / 2,
+            this.playerRight.y + (this.playerRight.height * this.playerRight.scaleY) / 2
         );
     }
 
@@ -493,7 +493,6 @@ class GameScene extends Phaser.Scene {
         const isMobile = !this.sys.game.device.os.desktop;
 
         const basketScale = isMobile ? 0.8 : 1;
-        const textScale = isMobile ? 0.8 : 1;
 
         this.playerLeft.setScale(basketScale);
         this.playerRight.setScale(basketScale);
@@ -606,7 +605,6 @@ gameStartBtn.addEventListener("click", () => {
         gameScene.isPaused = false;
         gameScene.scene.resume();
         
-        // Проверяем, существует ли bgMusic перед вызовом play
         if (gameScene.bgMusic) {
             gameScene.bgMusic.play({ loop: true });
         }

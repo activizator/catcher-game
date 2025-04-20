@@ -3,7 +3,7 @@
 **Catch falling fruits and veggies into separate baskets!** Keep the counts *equal* and collect **over 10 total** before time runs out!  
 
 ## 🎯 How to Play  
-- **← → arrows**: Move baskets  
+- **← → arrows OR (A D)**: Move baskets  
 - **Left basket**: Fruits (🍎🍌🍓)  
 - **Right basket**: Veggies (🥕🍅🥒)  
 - **Balance matters!** Uneven counts lose points.  
