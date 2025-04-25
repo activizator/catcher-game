@@ -15,17 +15,17 @@
 - Mobile: **Tap the on-screen pause button**
 
 ## ⚡ Challenge  
-- Speed **increases** over time!  
 - Can you keep perfect balance under pressure?  
 
 ## ✨ Features  
 - 🎯 Colorful fruit & veggie graphics  
 - ⏳ Time-pressure excitement  
-- 📈 Difficulty ramps up  
 
 ## 🎮 Perfect for players who love:  
 - Quick reflexes 🚀  
 - Strategic balancing ⚖️  
 - Fun, healthy themes!  
 
-**Can you master the challenge?**  
+**Can you master the challenge?**
+
+![Logo](catcher.jpg)
